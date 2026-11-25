@@ -1,0 +1,64 @@
+"""Shared, standard-library-only configuration and process helpers."""
+from pathlib import Path
+import re
+import shlex
+import subprocess
+import tomllib
+from urllib.parse import urlparse
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def load_config(path=None):
+    with Path(path or ROOT / "config.toml").open("rb") as stream:
+        config = tomllib.load(stream)
+    fedora = config["fedora"]
+    for key in ("image_url", "checksum_url", "keys_url"):
+        url = urlparse(fedora[key])
+        if (url.scheme != "https" or not url.hostname
+                or not (url.hostname == "fedoraproject.org" or url.hostname.endswith(".fedoraproject.org"))
+                or url.username or url.password or url.query or url.fragment):
+            raise ValueError(f"{key} must be an HTTPS URL on fedoraproject.org")
+    if not re.fullmatch(r"[0-9a-f]{64}", fedora["sha256"]):
+        raise ValueError("Invalid Fedora SHA256")
+    if not re.fullmatch(r"[0-9A-F]{40}", fedora["signing_fingerprint"]):
+        raise ValueError("Invalid Fedora signing fingerprint")
+    if type(fedora["size_bytes"]) is not int or fedora["size_bytes"] <= 0:
+        raise ValueError("Invalid Fedora image size")
+    filename = Path(urlparse(fedora["image_url"]).path).name
+    if not re.fullmatch(r"Fedora-Workstation-Live-[A-Za-z0-9._-]+\.iso", filename):
+        raise ValueError("Unexpected Workstation image filename")
+    release, architecture = fedora["release"], fedora["architecture"]
+    if not isinstance(release, str) or not release.isdigit() or architecture not in ("x86_64", "aarch64"):
+        raise ValueError("Use a stable numeric Fedora release and x86_64 or aarch64")
+    expected_path = f"/releases/{release}/Workstation/{architecture}/iso/"
+    if any(expected_path not in urlparse(fedora[key]).path for key in ("image_url", "checksum_url")):
+        raise ValueError("Fedora URLs must match the configured release and architecture")
+    if not filename.startswith(f"Fedora-Workstation-Live-{release}-") or not filename.endswith(f".{architecture}.iso"):
+        raise ValueError("Fedora image filename must match the configured release and architecture")
+    for package in config["workstation"]["packages"]:
+        if not isinstance(package, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9+_.-]*", package):
+            raise ValueError(f"Invalid package name: {package!r}")
+    for section, key in (("workstation", "start_syncthing"), ("desktop", "natural_scroll"), ("peer", "install_jami")):
+        if type(config[section][key]) is not bool:
+            raise ValueError(f"{section}.{key} must be true or false")
+    layout = config["desktop"]["button_layout"]
+    if not isinstance(layout, str) or not re.fullmatch(r"[a-z,:]*", layout):
+        raise ValueError("Invalid GNOME button layout")
+    lab = config["lab"]
+    for key in ("cloud_port", "office_port"):
+        if type(lab[key]) is not int or not 1024 <= lab[key] <= 65535:
+            raise ValueError(f"{key} must be an unprivileged TCP port")
+    if lab["cloud_port"] == lab["office_port"]:
+        raise ValueError("Cloud and office ports must differ")
+    for key in ("nextcloud_image", "postgres_image", "valkey_image", "collabora_image"):
+        if not isinstance(lab[key], str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/@:-]*", lab[key]):
+            raise ValueError(f"Invalid container image: {key}")
+    return config
+
+
+def run(command, *, dry_run=False, **kwargs):
+    print("+ " + shlex.join([str(part) for part in command]), flush=True)
+    if dry_run:
+        return None
+    return subprocess.run(command, check=True, **kwargs)

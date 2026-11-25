@@ -1,0 +1,39 @@
+# Public configuration: no passwords, tokens, employee records, or device IDs.
+# Secrets for the optional local lab are generated into ignored .local/ files.
+
+[fedora]
+release = "45"
+architecture = "x86_64"
+image_url = "https://download.fedoraproject.org/pub/fedora/linux/releases/45/Workstation/x86_64/iso/Fedora-Workstation-Live-45-1.4.x86_64.iso"
+checksum_url = "https://dl.fedoraproject.org/pub/fedora/linux/releases/45/Workstation/x86_64/iso/Fedora-Workstation-45-1.4-x86_64-CHECKSUM"
+keys_url = "https://fedoraproject.org/fedora.gpg"
+signing_fingerprint = "4F50A6114CD5C6976A7F1179655A4B02F577861E"
+sha256 = "68338c6bfe4f0d64151f2e47efe9f44a8855ad05b460e56b844fb3fa2c9a3beb"
+size_bytes = 2925092864
+
+[workstation]
+packages = [
+  "git", "curl", "gnupg2", "gnupg2-verify", "firefox",
+  "libreoffice-writer", "libreoffice-calc", "libreoffice-impress",
+  "podman", "podman-compose", "syncthing",
+]
+start_syncthing = true
+
+[desktop]
+# GNOME remains the desktop. These are per-user preferences.
+natural_scroll = true
+button_layout = "close,minimize,maximize:"
+
+[peer]
+# Jami is optional; setting this to true opts into the Flathub remote.
+install_jami = false
+
+[lab]
+# All published ports stay on this computer's loopback interface.
+# Versions are explicit except CODE's development channel; review before upgrades.
+nextcloud_image = "docker.io/library/nextcloud:34.0.6-apache"
+postgres_image = "docker.io/library/postgres:17-alpine"
+valkey_image = "docker.io/valkey/valkey:8-alpine"
+collabora_image = "docker.io/collabora/code:latest"
+cloud_port = 8080
+office_port = 9980
