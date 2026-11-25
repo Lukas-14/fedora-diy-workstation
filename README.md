@@ -5,6 +5,9 @@ a verified ISO downloader, peer-to-peer tools, and an optional collaboration lab
 that runs **on the test computer**. No paid subscription or rented server is
 required for these components.
 
+**Taking over the project? Read the [handover guide](HANDOVER.md)** for current
+status, startup/login steps, test users and the outstanding DOCX/WOPI problem.
+
 The repository configures Fedora **after a normal installation**. Choose disks,
 disk encryption and your personal account in the Fedora installer. The scripts
 do not partition disks, overwrite USB drives or replace your installed OS.
