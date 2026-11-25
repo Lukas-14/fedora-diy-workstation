@@ -121,7 +121,7 @@ https://SERVER {
         reverse_proxy livekit:7880
     }
     handle {
-        reverse_proxy element:80
+        reverse_proxy element:8080
     }
 }
 """.replace("SERVER", settings["server_name"]).replace("WELLKNOWN", json.dumps(well_known))
@@ -143,7 +143,8 @@ def services(settings, directory):
             "volumes": ["matrix-data:/data", bind("homeserver.yaml", "/config/homeserver.yaml"),
                         bind("rtc-registration.yaml", "/config/rtc-registration.yaml"), bind("log.yaml", "/config/log.yaml")],
         },
-        "element": {"image": settings["element_image"], "volumes": [bind("element.json", "/app/config.json")]},
+        "element": {"image": settings["element_image"], "environment": {"ELEMENT_WEB_PORT": "8080"},
+                    "volumes": [bind("element.json", "/app/config.json")]},
         "livekit": {
             "image": settings["livekit_image"], "command": ["--config", "/etc/livekit.yaml"],
             "volumes": [bind("livekit.yaml", "/etc/livekit.yaml")],

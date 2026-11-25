@@ -326,7 +326,7 @@ acceptance test on the newly installed Fedora computer; unit tests and Compose
 validation do not establish browser, camera or rootless-container compatibility.
 
 An optional isolated Docker integration check downloads Matrix images, checks
-HTTPS, registration, message exchange, MatrixRTC discovery/authorization,
+the Element web page and client configuration, HTTPS, registration, message exchange, MatrixRTC discovery/authorization,
 LiveKit room creation and chat account deactivation, then removes its own
 randomly named test containers and volumes. It does not install a host CA:
 

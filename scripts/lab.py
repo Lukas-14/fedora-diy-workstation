@@ -215,6 +215,8 @@ def main():
                 matrix_lab.prepare(prefix, LOCAL)
             run(prefix + ["up", "-d"])
             if matrix["enabled"]:
+                # Caddy has its admin API disabled; restart to read regenerated routes.
+                run(prefix + ["restart", "gateway"])
                 matrix_lab.configure(prefix, LOCAL)
             configure(prefix, settings, config.get("theme"))
         elif args.action == "configure":

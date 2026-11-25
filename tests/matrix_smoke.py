@@ -67,6 +67,19 @@ def main():
                     time.sleep(2)
             else:
                 raise RuntimeError("Matrix API not reachable through local HTTPS")
+            # Check the web frontend too: working Matrix APIs do not prove its
+            # reverse-proxy port matches the unprivileged Element container.
+            for _ in range(30):
+                try:
+                    with urllib.request.urlopen(base + "/", context=context, timeout=10) as response:
+                        assert response.status == 200
+                        assert b"<html" in response.read().lower()
+                    break
+                except (OSError, urllib.error.URLError):
+                    time.sleep(2)
+            else:
+                raise RuntimeError("Element web frontend not reachable through local HTTPS")
+            assert api("/config.json")["default_server_config"]["m.homeserver"]["base_url"] == base
             well_known = api("/.well-known/matrix/client")
             assert well_known["m.homeserver"]["base_url"] == base
             state = json.loads((directory / "matrix/secrets.json").read_text())
@@ -108,7 +121,7 @@ def main():
                 assert error.code == 401
             else:
                 raise AssertionError("Deactivated Matrix account retained API access")
-            print("PASS: local HTTPS, accounts, chat, RTC discovery, LiveKit token/room creation, offboarding.")
+            print("PASS: Element web/config, local HTTPS, accounts, chat, RTC discovery, LiveKit token/room creation, offboarding.")
             print("Browser media-device and two-participant audio/video acceptance remain manual.")
         except Exception:
             subprocess.run(prefix + ["logs", "--tail", "35", "matrix", "matrixrtc", "gateway", "livekit"], check=False)
