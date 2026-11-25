@@ -12,14 +12,15 @@ import sys
 import time
 
 from common import ROOT, load_config, run
+import matrix_lab
 
 PROJECT = "fedora-diy-workstation"
 LOCAL = ROOT / ".local"
 
 
-def compose_document(settings):
+def compose_document(settings, matrix_settings=None, directory=LOCAL):
     cloud_port, office_port = settings["cloud_port"], settings["office_port"]
-    return {
+    document = {
         "services": {
             "db": {
                 "image": settings["postgres_image"],
@@ -64,9 +65,13 @@ def compose_document(settings):
         },
         "volumes": {"database": {}, "nextcloud": {}},
     }
+    if matrix_settings and matrix_settings.get("enabled"):
+        document["services"].update(matrix_lab.services(matrix_settings, directory))
+        document["volumes"].update({"matrix-data": {}, "matrix-tls": {}})
+    return document
 
 
-def initialize(settings, directory=LOCAL):
+def initialize(settings, directory=LOCAL, matrix_settings=None, theme=None):
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     directory.chmod(0o700)
@@ -82,8 +87,11 @@ def initialize(settings, directory=LOCAL):
         with os.fdopen(fd, "w") as stream:
             stream.write(f"POSTGRES_PASSWORD={secrets.token_urlsafe(32)}\n")
             stream.write(f"NEXTCLOUD_ADMIN_PASSWORD={secrets.token_urlsafe(32)}\n")
+    if matrix_settings and matrix_settings.get("enabled"):
+        values = matrix_lab.initialize(matrix_settings, directory, theme)
+        matrix_lab.write_key_files(directory, values)
     document = directory / "compose.json"
-    document.write_text(json.dumps(compose_document(settings), indent=2) + "\n")
+    document.write_text(json.dumps(compose_document(settings, matrix_settings, directory), indent=2) + "\n")
     document.chmod(0o600)
     return document, environment
 
@@ -100,8 +108,8 @@ def engine_command(engine):
     return ["docker", "compose"]
 
 
-def compose_prefix(engine, settings):
-    document, environment = initialize(settings)
+def compose_prefix(engine, settings, matrix_settings=None, theme=None):
+    document, environment = initialize(settings, matrix_settings=matrix_settings, theme=theme)
     return engine_command(engine) + ["--project-name", PROJECT, "--env-file", str(environment), "--file", str(document)]
 
 
@@ -128,7 +136,10 @@ def configure(prefix, settings, theme=None):
     else:
         raise ValueError("Nextcloud did not become ready. Inspect: python3 scripts/lab.py logs")
     installed = json.loads(occ(prefix, ["app:list", "--output=json"], capture=True).stdout)
-    for app in ("richdocuments", "spreed"):
+    # Existing Talk data is retained when switching to Element.
+    if "spreed" in installed.get("enabled", {}):
+        occ(prefix, ["app:disable", "spreed"])
+    for app in ("richdocuments",):
         if app not in installed.get("enabled", {}):
             action = "app:enable" if app in installed.get("disabled", {}) else "app:install"
             occ(prefix, [action, app])
@@ -173,16 +184,19 @@ def main():
     parser.add_argument("--config", type=Path, default=ROOT / "config.toml")
     parser.add_argument("--engine", choices=("auto", "podman", "docker"), default="auto")
     subparsers = parser.add_subparsers(dest="action", required=True)
-    for action in ("init", "up", "down", "status", "logs", "configure", "credentials"):
+    for action in ("init", "up", "down", "status", "logs", "configure", "credentials", "trust"):
         subparsers.add_parser(action)
+    for action in ("matrix-user", "matrix-disable"):
+        subparsers.add_parser(action).add_argument("username")
     occ_parser = subparsers.add_parser("occ", help="Run a Nextcloud administration command")
     occ_parser.add_argument("arguments", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     try:
         config = load_config(args.config)
         settings = config["lab"]
+        matrix = config.get("matrix", {"enabled": False})
         if args.action == "init":
-            document, _ = initialize(settings)
+            document, _ = initialize(settings, matrix_settings=matrix, theme=config.get("theme"))
             print(f"Generated {document}; local credentials are excluded from Git.")
             return
         if args.action == "credentials":
@@ -191,13 +205,32 @@ def main():
                 raise ValueError("Run lab.py init or lab.py up first")
             values = dict(line.split("=", 1) for line in environment.read_text().splitlines())
             print("Username: pilot-admin\nPassword: " + values["NEXTCLOUD_ADMIN_PASSWORD"])
+            matrix_secrets = LOCAL / "matrix/secrets.json"
+            if matrix["enabled"] and matrix_secrets.exists():
+                print("Matrix username: pilot-admin\nMatrix password: " + json.loads(matrix_secrets.read_text())["admin_password"])
             return
-        prefix = compose_prefix(args.engine, settings)
+        prefix = compose_prefix(args.engine, settings, matrix, config.get("theme"))
         if args.action == "up":
+            if matrix["enabled"]:
+                matrix_lab.prepare(prefix, LOCAL)
             run(prefix + ["up", "-d"])
+            if matrix["enabled"]:
+                matrix_lab.configure(prefix, LOCAL)
             configure(prefix, settings, config.get("theme"))
         elif args.action == "configure":
+            if matrix["enabled"]:
+                matrix_lab.configure(prefix, LOCAL)
             configure(prefix, settings, config.get("theme"))
+        elif args.action == "trust":
+            certificate = LOCAL / "matrix/ca.crt"
+            if not matrix["enabled"] or "BEGIN CERTIFICATE" not in certificate.read_text():
+                raise ValueError("Run lab.py up before trusting the local Matrix CA")
+            run(["sudo", "trust", "anchor", "--store", str(certificate)])
+            print("Local Matrix certificate authority trusted. Restart your browser before opening Element.")
+        elif args.action in ("matrix-user", "matrix-disable"):
+            if not matrix["enabled"]:
+                raise ValueError("Matrix is disabled in config.toml")
+            matrix_lab.user_command(prefix, LOCAL, args.username, disable=args.action == "matrix-disable")
         elif args.action == "down":
             # Volumes are intentionally retained.
             run(prefix + ["down"])
@@ -209,6 +242,9 @@ def main():
             if not args.arguments:
                 parser.error("Provide an occ command, such as user:add alice")
             occ(prefix, args.arguments, interactive=sys.stdin.isatty())
+        if args.action in ("up", "configure") and matrix["enabled"]:
+            print(f"Element chat and calls: https://{matrix['server_name']}")
+            print("Run python3 scripts/lab.py trust once on Fedora, then restart your browser.")
     except (ValueError, OSError, subprocess.CalledProcessError) as error:
         parser.exit(1, f"Lab command stopped: {error}\n")
 

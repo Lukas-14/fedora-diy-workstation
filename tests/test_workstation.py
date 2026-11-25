@@ -17,6 +17,7 @@ import download_fedora
 import lab
 import setup_fedora
 import theme
+import matrix_lab
 
 
 class ConfigurationTests(unittest.TestCase):
@@ -169,6 +170,45 @@ class SignatureTests(unittest.TestCase):
 
 
 class LabTests(unittest.TestCase):
+    def test_matrix_keeps_every_published_port_on_loopback(self):
+        config = load_config()
+        services = lab.compose_document(config["lab"], config["matrix"])["services"]
+        ports = [port for service in services.values() for port in service.get("ports", [])]
+        self.assertEqual(len(ports), 5)
+        self.assertTrue(all(port.startswith("127.0.0.1:") for port in ports))
+        self.assertNotIn("ports", services["matrix"])
+        self.assertEqual(services["matrixrtc"]["network_mode"], "service:gateway")
+        self.assertNotIn("LIVEKIT_INSECURE_SKIP_VERIFY_TLS", services["matrixrtc"]["environment"])
+
+    def test_matrix_upgrade_keeps_existing_credentials_and_identity(self):
+        config = load_config()
+        with tempfile.TemporaryDirectory() as directory:
+            _, environment = lab.initialize(config["lab"], directory)
+            original = environment.read_text()
+            lab.initialize(config["lab"], directory, config["matrix"], config["theme"])
+            state = Path(directory) / "matrix/secrets.json"
+            before = state.read_text()
+            lab.initialize(config["lab"], directory, config["matrix"], config["theme"])
+            self.assertEqual(state.read_text(), before)
+            self.assertEqual(environment.read_text(), original)
+            self.assertEqual(stat.S_IMODE(state.stat().st_mode), 0o600)
+            self.assertEqual(stat.S_IMODE(state.parent.stat().st_mode), 0o700)
+            with self.assertRaisesRegex(ValueError, "identity"):
+                matrix_lab.initialize({**config["matrix"], "server_name": "different.invalid"}, directory)
+
+    def test_matrix_call_secrets_are_not_embedded_in_compose(self):
+        config = load_config()
+        with tempfile.TemporaryDirectory() as directory:
+            document, _ = lab.initialize(config["lab"], directory, config["matrix"], config["theme"])
+            state = json.loads((Path(directory) / "matrix/secrets.json").read_text())
+            for key, secret in state.items():
+                if key != "server_name":
+                    self.assertNotIn(secret, document.read_text())
+            homeserver = json.loads((Path(directory) / "matrix/homeserver.yaml").read_text())
+            self.assertFalse(homeserver["enable_registration"])
+            self.assertEqual(homeserver["federation_domain_whitelist"], [])
+            self.assertTrue(homeserver["experimental_features"]["msc4143_enabled"])
+
     def test_only_loopback_ports_are_published(self):
         services = lab.compose_document(load_config()["lab"])["services"]
         ports = [port for service in services.values() for port in service.get("ports", [])]

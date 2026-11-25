@@ -39,7 +39,7 @@ def load_config(path=None):
     for package in config["workstation"]["packages"]:
         if not isinstance(package, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9+_.-]*", package):
             raise ValueError(f"Invalid package name: {package!r}")
-    for section, key in (("workstation", "start_syncthing"), ("desktop", "natural_scroll"), ("peer", "install_jami")):
+    for section, key in (("workstation", "start_syncthing"), ("desktop", "natural_scroll"), ("peer", "install_element")):
         if type(config[section][key]) is not bool:
             raise ValueError(f"{section}.{key} must be true or false")
     layout = config["desktop"]["button_layout"]
@@ -69,6 +69,22 @@ def load_config(path=None):
     for key in ("nextcloud_image", "postgres_image", "valkey_image", "collabora_image"):
         if not isinstance(lab[key], str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/@:-]*", lab[key]):
             raise ValueError(f"Invalid container image: {key}")
+    matrix = config.get("matrix", {"enabled": False})
+    if type(matrix["enabled"]) is not bool:
+        raise ValueError("matrix.enabled must be true or false")
+    if matrix["enabled"]:
+        ports = [lab["cloud_port"], lab["office_port"]]
+        for key in ("https_port", "media_tcp_port", "media_udp_port"):
+            if type(matrix[key]) is not int or not 1024 <= matrix[key] <= 65535:
+                raise ValueError(f"Invalid Matrix port: {key}")
+            ports.append(matrix[key])
+        if len(set(ports)) != len(ports):
+            raise ValueError("Lab and Matrix ports must not overlap")
+        if matrix["server_name"] != f"localhost:{matrix['https_port']}":
+            raise ValueError("This local Matrix lab requires server_name localhost:<https_port>")
+        for key in ("synapse_image", "element_image", "livekit_image", "jwt_image", "gateway_image"):
+            if not isinstance(matrix[key], str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/@:-]*", matrix[key]):
+                raise ValueError(f"Invalid Matrix image: {key}")
     return config
 
 

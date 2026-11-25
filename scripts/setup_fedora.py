@@ -18,10 +18,10 @@ def commands(config):
            str(config["desktop"]["natural_scroll"]).lower()]
     yield ["gsettings", "set", "org.gnome.desktop.wm.preferences", "button-layout",
            config["desktop"]["button_layout"]]
-    if config["peer"]["install_jami"]:
+    if config["peer"]["install_element"]:
         yield ["sudo", "dnf", "install", "-y", "flatpak"]
         yield ["flatpak", "remote-add", "--user", "--if-not-exists", "flathub", "https://flathub.org/repo/flathub.flatpakrepo"]
-        yield ["flatpak", "install", "--user", "--noninteractive", "flathub", "net.jami.Jami"]
+        yield ["flatpak", "install", "--user", "--noninteractive", "flathub", "im.riot.Riot"]
 
 
 def main():

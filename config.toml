@@ -14,8 +14,8 @@ size_bytes = 2925092864
 [workstation]
 packages = [
   "git", "curl", "gnupg2", "gnupg2-verify", "firefox",
-  "libreoffice-writer", "libreoffice-calc", "libreoffice-impress",
-  "podman", "podman-compose", "syncthing",
+  "libreoffice",
+  "podman", "podman-compose", "syncthing", "nextcloud-client",
   "liberation-sans-fonts", "liberation-serif-fonts",
 ]
 start_syncthing = true
@@ -37,8 +37,8 @@ brand_color = "#326dd9"
 workspace_name = "Workspace"
 
 [peer]
-# Jami is optional; setting this to true opts into the Flathub remote.
-install_jami = false
+# Element Web is included in the lab. This also installs the optional desktop client.
+install_element = false
 
 [lab]
 # All published ports stay on this computer's loopback interface.
@@ -49,3 +49,16 @@ valkey_image = "docker.io/valkey/valkey:8-alpine"
 collabora_image = "docker.io/collabora/code:latest"
 cloud_port = 8080
 office_port = 9980
+
+[matrix]
+enabled = true
+# Local-only identity: keep this unchanged once Matrix users/rooms exist.
+server_name = "localhost:8443"
+https_port = 8443
+media_tcp_port = 7881
+media_udp_port = 7882
+synapse_image = "ghcr.io/element-hq/synapse:latest"
+element_image = "docker.io/vectorim/element-web:latest"
+livekit_image = "docker.io/livekit/livekit-server:latest"
+jwt_image = "ghcr.io/element-hq/lk-jwt-service:latest"
+gateway_image = "docker.io/library/caddy:2-alpine"
