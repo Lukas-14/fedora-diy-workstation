@@ -113,7 +113,7 @@ def occ(prefix, arguments, *, capture=False, interactive=False):
     return run(command, capture_output=capture, text=True)
 
 
-def configure(prefix, settings):
+def configure(prefix, settings, theme=None):
     print("Waiting for Nextcloud's initial installation (up to six minutes)...", flush=True)
     for _ in range(120):
         result = subprocess.run(prefix + ["exec", "-T", "--user", "www-data", "cloud", "php", "occ",
@@ -133,6 +133,9 @@ def configure(prefix, settings):
             action = "app:enable" if app in installed.get("disabled", {}) else "app:install"
             occ(prefix, [action, app])
     occ(prefix, ["background:cron"])
+    if theme and theme.get("enabled"):
+        occ(prefix, ["theming:config", "name", theme["workspace_name"]])
+        occ(prefix, ["theming:config", "primary_color", theme["brand_color"]])
     occ(prefix, ["config:system:set", "allow_local_remote_servers", "--type=boolean", "--value=true"])
     values = {
         "wopi_url": "http://office:9980",
@@ -176,7 +179,8 @@ def main():
     occ_parser.add_argument("arguments", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     try:
-        settings = load_config(args.config)["lab"]
+        config = load_config(args.config)
+        settings = config["lab"]
         if args.action == "init":
             document, _ = initialize(settings)
             print(f"Generated {document}; local credentials are excluded from Git.")
@@ -191,9 +195,9 @@ def main():
         prefix = compose_prefix(args.engine, settings)
         if args.action == "up":
             run(prefix + ["up", "-d"])
-            configure(prefix, settings)
+            configure(prefix, settings, config.get("theme"))
         elif args.action == "configure":
-            configure(prefix, settings)
+            configure(prefix, settings, config.get("theme"))
         elif args.action == "down":
             # Volumes are intentionally retained.
             run(prefix + ["down"])

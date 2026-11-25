@@ -16,6 +16,7 @@ from common import ROOT, load_config, run
 import download_fedora
 import lab
 import setup_fedora
+import theme
 
 
 class ConfigurationTests(unittest.TestCase):
@@ -53,10 +54,13 @@ class ConfigurationTests(unittest.TestCase):
             self.modified_config("start_syncthing = true", 'start_syncthing = "false"')
 
     def test_dry_run_never_executes(self):
-        with patch("common.subprocess.run") as execute:
+        with tempfile.TemporaryDirectory() as directory, patch("common.subprocess.run") as execute:
             for command in setup_fedora.commands(load_config()):
                 run(command, dry_run=True)
+            theme.apply_theme(load_config(), dry_run=True, backup=Path(directory) / "backup.json",
+                              wallpaper_directory=Path(directory) / "wallpapers")
             execute.assert_not_called()
+            self.assertEqual(list(Path(directory).iterdir()), [])
 
     def test_user_preferences_do_not_run_as_root(self):
         commands = list(setup_fedora.commands(load_config()))

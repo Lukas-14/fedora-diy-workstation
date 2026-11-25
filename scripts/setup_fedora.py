@@ -7,6 +7,7 @@ import shutil
 import subprocess
 
 from common import ROOT, load_config, run
+from theme import apply_theme
 
 
 def commands(config):
@@ -44,6 +45,7 @@ def main():
                 parser.error("GNOME gsettings is required")
         for command in commands(config):
             run(command, dry_run=args.dry_run)
+        apply_theme(config, dry_run=args.dry_run)
         print("Setup complete." if not args.dry_run else "Dry run complete; nothing changed.")
         print("Syncthing UI: http://127.0.0.1:8384 (pair devices manually).")
         print("Optional local co-editing lab: python3 scripts/lab.py up")

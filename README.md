@@ -88,6 +88,48 @@ This targets regular DNF-based Fedora Workstation, not Silverblue/Atomic.
 The dry run works on other Linux systems and changes nothing. For custom
 configuration, pass `--config /path/to/config.toml` to any script.
 
+### Subtle Egmont Group appearance
+
+The default `[theme]` uses the main Egmont Group identity as inspiration:
+
+- Original, quiet editorial wallpaper in white/cobalt (`#ffffff` / `#326dd9`).
+- A matching dark wallpaper in navy/cornflower (`#1c304a` / `#acc1f5`).
+- GNOME's built-in blue accent, its nearest stock match to cobalt.
+- Liberation Sans for interface text and Liberation Serif for document text.
+  These open-source fonts stand in for the brand guide's Arial/Times New Roman
+  fallbacks. Egmont's actual Gestura and Octave files are not distributed here.
+- The local Nextcloud lab's primary color follows `theme.brand_color`.
+
+No shell extensions or replacement GTK theme are installed. Backgrounds are
+copied into your user data directory, so moving the Git checkout does not break
+them. Applications that use their own styling/fonts can retain those choices.
+
+Preview: [light wallpaper](assets/egmont/light.svg) · [dark wallpaper](assets/egmont/dark.svg).
+
+Apply or inspect just the appearance, without reinstalling packages:
+
+```bash
+python3 scripts/theme.py --dry-run apply
+python3 scripts/theme.py apply
+```
+
+The initial GNOME appearance values are saved privately under
+`.local/theme-backup.json` before the first change. Reapplying preserves that
+snapshot. Restore those values with:
+
+```bash
+python3 scripts/theme.py restore
+```
+
+Set `theme.enabled = false` to skip future appearance changes. Use `restore`
+to undo an already-applied desktop theme; it does not reset Nextcloud's separate
+application settings. To use locally installed licensed brand fonts, edit the
+font descriptions in `[theme]`. This is a community pilot theme, not an official
+Egmont-distributed workstation image.
+
+References: [Egmont Group colours](https://brandcenter.egmont.com/colours) and
+[typography](https://brandcenter.egmont.com/typography).
+
 Open Syncthing at `http://127.0.0.1:8384`, pair a second device and explicitly
 choose the folder to share. Pairing is deliberately manual: no private device
 IDs or keys belong in the public repository. Keep Syncthing's GUI on loopback.

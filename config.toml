@@ -16,6 +16,7 @@ packages = [
   "git", "curl", "gnupg2", "gnupg2-verify", "firefox",
   "libreoffice-writer", "libreoffice-calc", "libreoffice-impress",
   "podman", "podman-compose", "syncthing",
+  "liberation-sans-fonts", "liberation-serif-fonts",
 ]
 start_syncthing = true
 
@@ -23,6 +24,17 @@ start_syncthing = true
 # GNOME remains the desktop. These are per-user preferences.
 natural_scroll = true
 button_layout = "close,minimize,maximize:"
+
+[theme]
+# Restrained Egmont Group palette; stock GNOME's blue is the closest built-in accent.
+enabled = true
+accent_color = "blue"
+color_scheme = "default"
+interface_font = "Liberation Sans 11"
+document_font = "Liberation Serif 11"
+titlebar_font = "Liberation Sans Bold 11"
+brand_color = "#326dd9"
+workspace_name = "Workspace"
 
 [peer]
 # Jami is optional; setting this to true opts into the Flathub remote.

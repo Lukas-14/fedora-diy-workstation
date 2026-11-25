@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 3840 2160">
+  <title>Egmont-inspired quiet pages — light</title>
+  <desc>Original abstract wallpaper using the Egmont Group white and cobalt colour pair.</desc>
+  <rect width="3840" height="2160" fill="#ffffff"/>
+  <g fill="none" stroke="#326dd9">
+    <path d="M2330 2510V580c355-155 765-168 1250-8v1930" stroke-width="2" opacity=".12"/>
+    <path d="M2420 2510V655c325-133 695-140 1130-1v1856" stroke-width="2" opacity=".09"/>
+    <path d="M2510 2510V730c294-110 625-112 980 4v1776" stroke-width="2" opacity=".065"/>
+    <path d="M2600 2510V805c263-87 555-84 830 9v1696" stroke-width="2" opacity=".045"/>
+  </g>
+  <path d="M2330 2510V580c355-155 765-168 1250-8v1938Z" fill="#326dd9" opacity=".018"/>
+  <path d="M2980 0h860v2160h-325C3250 1480 3040 770 2980 0Z" fill="#326dd9" opacity=".025"/>
+  <rect x="164" y="1812" width="7" height="116" rx="1" fill="#326dd9" opacity=".7"/>
+  <path d="M164 1992h138" stroke="#326dd9" stroke-width="1" opacity=".25"/>
+</svg>

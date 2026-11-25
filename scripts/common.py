@@ -45,6 +45,21 @@ def load_config(path=None):
     layout = config["desktop"]["button_layout"]
     if not isinstance(layout, str) or not re.fullmatch(r"[a-z,:]*", layout):
         raise ValueError("Invalid GNOME button layout")
+    theme = config.get("theme", {"enabled": False})
+    if type(theme["enabled"]) is not bool:
+        raise ValueError("theme.enabled must be true or false")
+    if theme["enabled"]:
+        if theme["accent_color"] not in ("blue", "teal", "green", "yellow", "orange", "red", "pink", "purple", "slate"):
+            raise ValueError("Use one of GNOME's built-in accent colors")
+        if theme["color_scheme"] not in ("default", "prefer-light", "prefer-dark"):
+            raise ValueError("Invalid GNOME color scheme")
+        for key in ("interface_font", "document_font", "titlebar_font"):
+            if not isinstance(theme[key], str) or not re.fullmatch(r"[\w .,()-]{1,95} [0-9]{1,2}", theme[key]):
+                raise ValueError(f"Invalid font description: {key}")
+        if not isinstance(theme["brand_color"], str) or not re.fullmatch(r"#[0-9a-fA-F]{6}", theme["brand_color"]):
+            raise ValueError("Invalid theme brand color")
+        if not isinstance(theme["workspace_name"], str) or not 1 <= len(theme["workspace_name"]) <= 80:
+            raise ValueError("Invalid workspace name")
     lab = config["lab"]
     for key in ("cloud_port", "office_port"):
         if type(lab[key]) is not int or not 1024 <= lab[key] <= 65535:
