@@ -21,8 +21,8 @@ def theme_settings(config, wallpaper_directory=WALLPAPERS):
         ("org.gnome.desktop.interface", "font-name", theme["interface_font"]),
         ("org.gnome.desktop.interface", "document-font-name", theme["document_font"]),
         ("org.gnome.desktop.wm.preferences", "titlebar-font", theme["titlebar_font"]),
-        ("org.gnome.desktop.background", "picture-uri", (directory / "egmont-light.svg").as_uri()),
-        ("org.gnome.desktop.background", "picture-uri-dark", (directory / "egmont-dark.svg").as_uri()),
+        ("org.gnome.desktop.background", "picture-uri", (directory / "egmont-clock.jpeg").as_uri()),
+        ("org.gnome.desktop.background", "picture-uri-dark", (directory / "egmont-clock.jpeg").as_uri()),
         ("org.gnome.desktop.background", "picture-options", "zoom"),
     ]
 
@@ -52,10 +52,9 @@ def apply_theme(config, *, dry_run=False, backup=BACKUP, wallpaper_directory=WAL
     settings = theme_settings(config, wallpaper_directory)
     if not dry_run:
         save_originals(settings, backup)
-    for variant in ("light", "dark"):
-        source = ROOT / "assets/egmont" / f"{variant}.svg"
-        destination = Path(wallpaper_directory) / f"egmont-{variant}.svg"
-        run(["install", "-D", "-m", "644", str(source), str(destination)], dry_run=dry_run)
+    source = ROOT / "assets/egmont/clock.jpeg"
+    destination = Path(wallpaper_directory) / "egmont-clock.jpeg"
+    run(["install", "-D", "-m", "644", str(source), str(destination)], dry_run=dry_run)
     for schema, key, value in settings:
         run(["gsettings", "set", schema, key, value], dry_run=dry_run)
 

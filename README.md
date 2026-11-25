@@ -95,8 +95,7 @@ configuration, pass `--config /path/to/config.toml` to any script.
 
 The default `[theme]` uses the main Egmont Group identity as inspiration:
 
-- Original, quiet editorial wallpaper in white/cobalt (`#ffffff` / `#326dd9`).
-- A matching dark wallpaper in navy/cornflower (`#1c304a` / `#acc1f5`).
+- The supplied Egmont clock photograph as the wallpaper in both light and dark mode.
 - GNOME's built-in blue accent, its nearest stock match to cobalt.
 - Liberation Sans for interface text and Liberation Serif for document text.
   These open-source fonts stand in for the brand guide's Arial/Times New Roman
@@ -107,7 +106,8 @@ No shell extensions or replacement GTK theme are installed. Backgrounds are
 copied into your user data directory, so moving the Git checkout does not break
 them. Applications that use their own styling/fonts can retain those choices.
 
-Preview: [light wallpaper](assets/egmont/light.svg) · [dark wallpaper](assets/egmont/dark.svg).
+Preview: [Egmont clock wallpaper](assets/egmont/clock.jpeg).
+Photo by User:Jhsmith, CC BY-SA 3.0; see [attribution](assets/egmont/ATTRIBUTION.md).
 
 Apply or inspect just the appearance, without reinstalling packages:
 
